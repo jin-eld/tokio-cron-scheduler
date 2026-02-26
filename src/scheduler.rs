@@ -193,10 +193,16 @@ impl Scheduler {
                                     }
                                     JobType::OneShot => None,
                                     JobType::Repeated => repeated_every.and_then(|r| {
-                                        next_tick.and_then(|nt| {
-                                            nt.checked_add_signed(chrono::Duration::seconds(
-                                                r as i64,
-                                            ))
+                                        next_tick.and_then(|mut nt| {
+                                            let step = chrono::Duration::seconds(r as i64);
+
+                                            // catch up until next_tick is strictly in
+                                            // the future
+                                            while nt <= now {
+                                                nt = nt.checked_add_signed(step)?;
+                                            }
+
+                                            Some(nt)
                                         })
                                     }),
                                 };
